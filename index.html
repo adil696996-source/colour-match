@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Colour Match</title>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ee;--ink:#22201f;--mute:#7a7471;--btn:#22201f;--btnt:#f3f1ee;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1b1a;--ink:#efece8;--mute:#9a938e;--btn:#efece8;--btnt:#1d1b1a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1d1b1a;--ink:#efece8;--mute:#9a938e;--btn:#efece8;--btnt:#1d1b1a;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}
+main{max-width:480px;margin:0 auto;padding:14px 16px 24px}
+#card{position:relative;height:calc(100svh - 120px);min-height:420px;max-height:720px;border-radius:26px;overflow:hidden;transition:background .2s}
+#card.fx{box-shadow:0 8px 28px rgba(0,0,0,.18)}
+.tl,.tr,.msg{position:absolute;z-index:3}
+.tl{top:16px;left:182px;font-size:15px;font-weight:500}
+#tgt{position:absolute;left:168px;right:0;top:0;height:42%;z-index:1;display:none}
+.tr{top:12px;right:18px;text-align:right}
+#big{font-size:64px;font-weight:700;line-height:1;letter-spacing:-.03em}
+#sub{font-size:14px;font-weight:500}
+.msg{left:0;right:0;bottom:22px;text-align:center;font-size:15px;font-weight:500}
+#strips{position:absolute;left:0;top:0;bottom:0;display:none;z-index:2}
+.strip{position:relative;width:56px;height:100%;float:left;touch-action:none;cursor:pointer}
+.th{position:absolute;left:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none}
+#ok{position:absolute;right:18px;bottom:18px;width:68px;height:68px;border-radius:50%;border:0;background:#fff;color:#22201f;font:700 15px inherit;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:4;cursor:pointer}
+#res{position:absolute;inset:0;display:none;flex-direction:column;z-index:5}
+#res div.r{flex:1;display:flex;align-items:flex-end;padding:14px 18px;font-size:15px;font-weight:500}
+#res .sc{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:60px;font-weight:700;background:var(--bg);color:var(--ink);padding:4px 16px;border-radius:18px;line-height:1.1}
+#next{display:none;width:100%;margin-top:12px;padding:16px;font:700 17px inherit;font-family:inherit;border:0;border-radius:14px;background:var(--btn);color:var(--btnt);cursor:pointer}
+#next:focus-visible,#ok:focus-visible{outline:3px solid var(--mute);outline-offset:3px}
+#fin{display:none;padding:8px 2px}
+button{font-family:inherit;font-size:17px;font-weight:700}#ok{font-size:15px}
+#lobby{padding:18px 2px}#lobby h1{font-size:36px;margin:0 0 6px}#lobby p{color:var(--mute);margin:0 0 20px}
+#lobby input{width:100%;padding:15px;font:500 17px/1.2 "Familjen Grotesk",system-ui,sans-serif;border-radius:14px;border:1px solid var(--mute);background:transparent;color:var(--ink);margin-bottom:10px;-webkit-user-select:text;user-select:text}
+#lobby button{width:100%;margin:0 0 10px;padding:16px;border:0;border-radius:14px;background:var(--btn);color:var(--btnt);cursor:pointer}
+#lobby button.alt{background:transparent;color:var(--ink);border:1px solid var(--mute)}
+.row{display:flex;gap:10px}.row input{flex:1;text-transform:uppercase;letter-spacing:.2em;text-align:center}.row button{width:110px!important}
+.code{font-size:64px;font-weight:700;letter-spacing:.12em;margin:4px 0 14px}
+.chip{border:1px solid var(--mute);border-radius:99px;padding:5px 12px;font-size:14px}.chip.me{background:var(--btn);color:var(--btnt)}
+#stand .chip,#plist .chip{display:block;border-radius:12px;margin-bottom:6px;padding:10px 14px;font-size:16px}
+#hint{color:var(--mute);font-size:15px;margin:8px 0}#err{color:#c0392b;font-size:15px;min-height:20px}
+#board{display:none}.mp #board{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.mp #card{height:calc(100svh - 176px)}
+#fin .t{font-size:56px;font-weight:700;letter-spacing:-.03em}
+#fin .n{color:var(--mute);font-size:17px;margin-bottom:16px}
+.hist{margin:18px 0 4px;font-size:15px}.hist h2{font-size:17px;margin:0 0 6px}.hist div{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--mute);color:var(--mute)}.hist div b{color:var(--ink)}
+.pair{display:flex;height:46px;border-radius:12px;overflow:hidden;margin-bottom:8px}
+.pair i{flex:1}.pair b{width:70px;display:flex;align-items:center;justify-content:center;background:var(--btn);color:var(--btnt);font-size:15px}
+</style>
+</head>
+<body>
+<main>
+<div id="lobby"><h1>Colour Match</h1><p>Match the colours as closely as you can. Play alone or race friends with a game code.</p><div id="ctl"><input id="nm" maxlength="14" placeholder="Your name" autocomplete="off"><button id="mk">Create a game</button><div class="row"><input id="cd" maxlength="4" placeholder="CODE" autocomplete="off"><button id="jn" class="alt">Join</button></div><button id="solo" class="alt">Play solo</button></div><div id="wait" style="display:none">Game code<div class="code" id="shown"></div><div id="plist"></div><div id="hint"></div><button id="start" style="display:none;margin-top:10px">Start game</button></div><div id="err"></div></div>
+<div id="board"></div>
+<div id="card" style="display:none">
+  <div id="tgt"></div>
+  <div class="tl" id="cnt"></div>
+  <div class="tr"><div id="big"></div><div id="sub"></div></div>
+  <div id="strips"><div class="strip" id="sh"><div class="th"></div></div><div class="strip" id="ss"><div class="th"></div></div><div class="strip" id="sl"><div class="th"></div></div></div>
+  <div class="msg" id="msg"></div>
+  <button id="ok" aria-label="Lock in colour">Lock in</button>
+  <div id="res"><div class="r" id="rt"></div><div class="r" id="rm"></div><div class="sc" id="sc"></div></div>
+</div>
+<button id="next">Next</button>
+<div id="fin"></div>
+</main>
+<script>
+var ROUNDS=5,SECS=8,round=0,total=0,hist=[],T,M,phase='',timer,left;
+var $=function(i){return document.getElementById(i)};
+function rgb(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l);
+ var f=function(n){var k=(n+h/30)%12;return l-a*Math.max(-1,Math.min(k-3,9-k,1))};return [f(0)*255,f(8)*255,f(4)*255]}
+function css(c){return 'hsl('+Math.round(c.h)+','+Math.round(c.s)+'%,'+Math.round(c.l)+'%)'}
+function ink(c){var r=rgb(c.h,c.s,c.l);var y=.299*r[0]+.587*r[1]+.114*r[2];return y>150?'#22201f':'#fff'}
+function setInk(c){$('card').style.color=ink(c)}
+function start(){
+ round++;
+ var R=mp?rng(mp.code+mp.gid+round):Math.random;
+ T={h:R()*360,s:35+R()*55,l:30+R()*40};
+ M={h:180,s:50,l:50};
+ $('fin').style.display='none';$('card').style.display='';$('next').style.display='none';
+ $('res').style.display='none';$('strips').style.display='none';$('ok').style.display='none';
+ $('cnt').textContent=round+' / '+ROUNDS;
+ go();
+}
+function go(){
+ phase='match';
+ $('tgt').style.display='block';$('tgt').style.background=css(T);
+ $('cnt').style.color=ink(T);
+ $('msg').textContent='Yours';$('msg').style.cssText='left:168px;right:auto;text-align:left;padding-left:14px;bottom:26px';
+ $('strips').style.display='block';$('ok').style.display='block';
+ draw();
+}
+function draw(){
+ $('card').style.background=css(M);setInk(M);
+ var hs=[];for(var i=0;i<=6;i++)hs.push('hsl('+i*60+','+M.s+'%,'+M.l+'%)');
+ $('sh').style.background='linear-gradient(to bottom,'+hs.join(',')+')';
+ $('ss').style.background='linear-gradient(to bottom,hsl('+M.h+',100%,'+M.l+'%),hsl('+M.h+',0%,'+M.l+'%))';
+ $('sl').style.background='linear-gradient(to bottom,#fff,hsl('+M.h+','+M.s+'%,50%),#000)';
+ $('sh').firstChild.style.top=(M.h/360*100)+'%';
+ $('ss').firstChild.style.top=((100-M.s)+'%');
+ $('sl').firstChild.style.top=((100-M.l)+'%');
+}
+function bind(id,key){
+ var el=$(id),on=false;
+ function mv(e){var r=el.getBoundingClientRect();var y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
+  if(key==='h')M.h=y*360;else M[key]=(1-y)*100;draw()}
+ el.addEventListener('pointerdown',function(e){on=true;el.setPointerCapture(e.pointerId);mv(e)});
+ el.addEventListener('pointermove',function(e){if(on)mv(e)});
+ el.addEventListener('pointerup',function(){on=false});
+}
+bind('sh','h');bind('ss','s');bind('sl','l');
+$('card').addEventListener('click',function(){if(phase==='mem')go()});
+$('ok').onclick=function(){
+ var a=rgb(T.h,T.s,T.l),b=rgb(M.h,M.s,M.l);
+ var d=Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2)+Math.pow(a[2]-b[2],2));
+ var pts=Math.min(100,Math.round(110*Math.exp(-d/90)));
+ total+=pts;hist.push({t:css(T),m:css(M),p:pts});phase='res';sync();
+ $('rt').style.background=css(T);$('rt').style.color=ink(T);$('rt').textContent='Target';
+ $('rm').style.background=css(M);$('rm').style.color=ink(M);$('rm').textContent='Yours';
+ $('sc').textContent='+'+pts;
+ $('res').style.display='flex';$('strips').style.display='none';$('ok').style.display='none';
+ $('card').style.color='';
+ $('next').textContent=round===ROUNDS?'See final score':'Next colour';$('next').style.display='block';
+};
+$('next').onclick=function(){if(round>=ROUNDS)finish();else start()};
+function finish(){
+ $('card').style.display='none';$('next').style.display='none';
+ var msg=total>=430?'Colour wizard.':total>=330?'Sharp eye.':total>=220?'Decent eye.':'Keep practising.';
+ var prev=[];try{prev=JSON.parse(localStorage.getItem('cm-scores'))||[]}catch(e){}
+ var best=prev.reduce(function(m,x){return Math.max(m,x.s)},0);
+ var isBest=prev.length>0&&total>best;
+ prev.push({s:total,d:Date.now()});prev=prev.slice(-20);
+ try{localStorage.setItem('cm-scores',JSON.stringify(prev))}catch(e){}
+ best=Math.max(best,total);
+ var h='<div class="t">'+total+' / '+ROUNDS*100+'</div><div class="n">'+msg+' '+(isBest?'New best score!':'Best: '+best)+'</div>';
+ hist.forEach(function(r){h+='<div class="pair"><i style="background:'+r.t+'"></i><i style="background:'+r.m+'"></i><b>'+r.p+'</b></div>'});
+ if(mp)h+='<div class="hist"><h2>Standings</h2><div id="stand"></div></div>';
+ h+='<div class="hist"><h2>Your scores</h2>';
+ prev.slice(-8).reverse().forEach(function(x,i){var d=new Date(x.d).toLocaleDateString(undefined,{month:'short',day:'numeric'});h+='<div><span>'+d+(i===0?' (this game)':'')+'</span><b>'+x.s+(x.s===best?' ★':'')+'</b></div>'});
+ h+='</div>';
+ h+='<button id="again" style="width:100%;margin-top:10px;padding:16px;font:700 17px inherit;font-family:inherit;border:0;border-radius:14px;background:var(--btn);color:var(--btnt);cursor:pointer">Play again</button>';
+ $('fin').innerHTML=h;$('fin').style.display='block';document.body.className='';render();
+ $('again').onclick=function(){if(mp){if(isHost())begin(Date.now());else $('again').textContent='Waiting for the host…'}else{round=0;total=0;hist=[];start()}};
+}
+var mp=null,room=null;
+function joinRoom(code){
+ var id=Math.random().toString(36).slice(2,10),peers=[],cbs=[],mine={},opened=false;
+ function post(patch){return fetch('/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:code,id:id,presence:patch})})}
+ return new Promise(function(res,rej){
+  var es=new EventSource('/events?room='+code+'&id='+id);
+  es.onmessage=function(e){peers=JSON.parse(e.data).map(function(p){return {peer:p.id,kind:'viewer',sameTab:p.id===id,presence:p.presence}});cbs.forEach(function(f){f({peers:peers})})};
+  es.onopen=function(){if(opened){post(mine)}else{opened=true;res({peers:function(){return peers},presence:function(patch){Object.assign(mine,patch);return post(patch)},onPeers:function(f){cbs.push(f)}})}};
+  es.onerror=function(){if(!opened){es.close();rej()}};
+ })}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function rng(s){var h=1779033703^s.length;for(var i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}
+ return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296}}
+function players(){return room?room.peers().filter(function(p){return p.kind==='viewer'&&p.presence&&p.presence.name}).sort(function(a,b){return (a.presence.joinedAt-b.presence.joinedAt)||(a.peer<b.peer?-1:1)}):[]}
+function isHost(){var p=players();return p.length>0&&p[0].sameTab}
+function board(){return players().sort(function(a,b){return (b.presence.total||0)-(a.presence.total||0)}).map(function(p){var q=p.presence;return '<span class="chip'+(p.sameTab?' me':'')+'"><b>'+esc(q.name)+(p.sameTab?' (you)':'')+'</b> '+(q.total||0)+' pts · '+(q.done?'finished':(q.r||0)+'/'+ROUNDS)+'</span>'}).join('')}
+function render(){if(!mp)return;var b=board();$('board').innerHTML=b;var s=$('stand');if(s)s.innerHTML=b;
+ if(!mp.gid){$('plist').innerHTML=b;$('start').style.display=isHost()?'block':'none';$('hint').textContent=isHost()?'Share the code. Press start when everyone has joined.':'Waiting for the host to start…'}}
+function sync(){if(room)room.presence({r:round,total:total,done:round>=ROUNDS}).catch(function(){})}
+function begin(gid){mp.gid=gid;round=0;total=0;hist=[];room.presence({gid:gid,r:0,total:0,done:false}).catch(function(){});$('lobby').style.display='none';document.body.className='mp';start();render()}
+function peersChanged(){var h=players()[0];if(h&&!h.sameTab&&h.presence.gid&&h.presence.gid!==mp.gid)begin(h.presence.gid);render()}
+async function enter(code){
+ var nm=($('nm').value.trim()||'Player').slice(0,14);$('err').textContent='';
+ try{room=await joinRoom(code);mp={code:code,gid:0};
+  await room.presence({name:nm,joinedAt:Date.now(),gid:0,r:0,total:0,done:false});
+  room.onPeers(peersChanged);
+  $('ctl').style.display='none';$('wait').style.display='block';$('shown').textContent=code;render();
+ }catch(e){room=null;mp=null;$('err').textContent='Couldn’t connect to the game. Check your internet and try again.'}
+}
+$('mk').onclick=function(){var a='ABCDEFGHJKMNPQRSTUVWXYZ',c='';for(var i=0;i<4;i++)c+=a[Math.floor(Math.random()*a.length)];enter(c)};
+$('jn').onclick=function(){var c=$('cd').value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){$('err').textContent='Enter the 4-letter code.';return}enter(c)};
+$('solo').onclick=function(){mp=null;$('lobby').style.display='none';round=0;total=0;hist=[];start()};
+$('start').onclick=function(){begin(Date.now())};
+</script>
+</body>
+</html>
