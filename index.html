@@ -145,13 +145,37 @@ function finish(){
  $('again').onclick=function(){if(mp){if(isHost())begin(Date.now());else $('again').textContent='Waiting for the host…'}else{round=0;total=0;hist=[];start()}};
 }
 var mp=null,room=null;
+var DB='https://colour-match-e03c0-default-rtdb.asia-southeast1.firebasedatabase.app';
 function joinRoom(code){
- var id=Math.random().toString(36).slice(2,10),peers=[],cbs=[],mine={},opened=false;
- function post(patch){return fetch('/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:code,id:id,presence:patch})})}
+ var id=Math.random().toString(36).slice(2,10),state={},cbs=[],opened=false,base=DB+'/rooms/'+code+'/players';
+ function notify(){cbs.forEach(function(f){f()})}
+ function setAt(path,data,merge){
+  var p=path.split('/').filter(Boolean);
+  if(!p.length){if(merge)Object.assign(state,data);else state=data||{};return}
+  if(p.length===1){if(merge)state[p[0]]=Object.assign(state[p[0]]||{},data);else if(data===null)delete state[p[0]];else state[p[0]]=data;return}
+  var o=state[p[0]]=state[p[0]]||{};
+  if(merge)o[p[1]]=Object.assign(o[p[1]]||{},data);else o[p[1]]=data;
+ }
+ function write(patch){
+  patch.ts=Date.now();
+  state[id]=Object.assign(state[id]||{},patch);
+  notify();
+  return fetch(base+'/'+id+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+ }
  return new Promise(function(res,rej){
-  var es=new EventSource('/events?room='+code+'&id='+id);
-  es.onmessage=function(e){peers=JSON.parse(e.data).map(function(p){return {peer:p.id,kind:'viewer',sameTab:p.id===id,presence:p.presence}});cbs.forEach(function(f){f({peers:peers})})};
-  es.onopen=function(){if(opened){post(mine)}else{opened=true;res({peers:function(){return peers},presence:function(patch){Object.assign(mine,patch);return post(patch)},onPeers:function(f){cbs.push(f)}})}};
+  var es=new EventSource(base+'.json');
+  ['put','patch'].forEach(function(t){es.addEventListener(t,function(e){
+   try{var m=JSON.parse(e.data);setAt(m.path,m.data,t==='patch');notify()}catch(x){}
+  })});
+  es.onopen=function(){if(!opened){opened=true;
+   setInterval(function(){if(state[id])write({})},5000);
+   setInterval(notify,5000);
+   window.addEventListener('pagehide',function(){try{fetch(base+'/'+id+'.json',{method:'DELETE',keepalive:true})}catch(x){}});
+   res({
+    peers:function(){var now=Date.now();return Object.keys(state).filter(function(k){var v=state[k];return v&&typeof v==='object'&&(k===id||now-(v.ts||0)<30000)}).map(function(k){return {peer:k,kind:'viewer',sameTab:k===id,presence:state[k]}})},
+    presence:write,
+    onPeers:function(f){cbs.push(f)}
+   })}};
   es.onerror=function(){if(!opened){es.close();rej()}};
  })}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
